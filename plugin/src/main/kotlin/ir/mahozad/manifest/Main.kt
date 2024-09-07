@@ -5,11 +5,6 @@ import org.gradle.api.Project
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
 import javax.inject.Inject
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.createTempDirectory
-import kotlin.io.path.div
-import kotlin.io.path.name
-import kotlin.io.path.outputStream
 
 
 // See https://github.com/JetBrains/compose-multiplatform/tree/master/gradle-plugins
@@ -49,8 +44,8 @@ abstract class ComposeExeManifest : Plugin<Project> {
             ExeManifest::class.java,
             project
         )
-        val embedManifestInExe = project.tasks.register("embedManifestInExe"/*, Exec::class.java*/) {
-            it.doLast {
+        val embedManifestInExe = project.tasks.register("embedManifestInExe"/*, Exec::class.java*/) { task ->
+            task.doLast {
                 if (!composeExeManifest.enabled.get()) return@doLast
 
                 val appExeFiles = project
@@ -63,7 +58,7 @@ abstract class ComposeExeManifest : Plugin<Project> {
                     .flatMap { it.filter { it.extension.equals("exe", ignoreCase = true) } }
 
                 // Copies the files from plugin JAR to a directory
-                val mtPath = createTempDirectory() / "mt.exe"
+                val mtPath = task.temporaryDir.resolve("mt.exe")
                 val dllPath = mtPath.resolveSibling("midlrtmd.dll")
                 javaClass.getResourceAsStream("/mt_x64/${mtPath.name}")
                     ?.use { mtPath.outputStream().use(it::copyTo) }
@@ -78,7 +73,7 @@ abstract class ComposeExeManifest : Plugin<Project> {
                         appExe.setWritable(true)
                         ProcessBuilder()
                             .command(
-                                mtPath.absolutePathString(),
+                                mtPath.absolutePath,
                                 "-nologo",
                                 "-manifest", composeExeManifest.manifestFile.get().asFile.absolutePath,
                                 "-outputresource:\"${appExe.absolutePath};#1\""
