@@ -22,6 +22,8 @@ Related StackOverflow posts:
   - https://stackoverflow.com/q/1385866
   - https://stackoverflow.com/q/11705047
   - https://stackoverflow.com/q/61200747
+  - https://stackoverflow.com/q/78466325
+  - https://stackoverflow.com/q/39493502
 
 
 [1]: https://learn.microsoft.com/en-us/windows/win32/sbscs/mt-exe

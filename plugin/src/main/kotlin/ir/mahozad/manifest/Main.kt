@@ -8,11 +8,7 @@ import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
 import javax.inject.Inject
 
-
 // See https://github.com/JetBrains/compose-multiplatform/tree/master/gradle-plugins
-// and https://stackoverflow.com/q/78466325/8583692
-// and https://stackoverflow.com/q/39493502/8583692
-
 
 abstract class PluginConfigs @Inject constructor(project: Project) {
     /**
