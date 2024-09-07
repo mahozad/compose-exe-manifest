@@ -4,7 +4,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
@@ -16,7 +15,7 @@ import javax.inject.Inject
 // and https://stackoverflow.com/q/39493502/8583692
 
 
-abstract class ExeManifest @Inject constructor(project: Project) {
+abstract class PluginConfigs @Inject constructor(project: Project) {
     /**
      * Whether the embedding is enabled.
      *
@@ -41,19 +40,19 @@ abstract class ExeManifest @Inject constructor(project: Project) {
 }
 
 @Suppress("unused")
-abstract class ComposeExeManifest : Plugin<Project> {
-    override fun apply(project: Project) {
+abstract class EmbedPlugin : Plugin<Project> {
 
-        val composeExeManifest = project.extensions.create(
+    override fun apply(project: Project) {
+        val pluginConfigs = project.extensions.create(
             "composeExeManifest",
-            ExeManifest::class.java,
+            PluginConfigs::class.java,
             project
         )
 
         val embedTask = project.tasks.register(
             "embedManifestInExe",
-            MyTask::class.java,
-            composeExeManifest
+            EmbedTask::class.java,
+            pluginConfigs
         )
 
         // TO access AbstractJPackageTask, we needed to add the plugin as a dependency in our build file.
@@ -75,34 +74,22 @@ abstract class ComposeExeManifest : Plugin<Project> {
             // In other words, this block is skipped if JetBrains Compose plugin has not been applied
             it.finalizedBy(embedTask)
         }
-
-
-        // project.tasks.register("SampleTask", MyTask::class.java) {
-        //     println("Hello world!")
-        // }
     }
 }
 
-abstract class MyTask @Inject constructor(config: ExeManifest) : DefaultTask() {
+abstract class EmbedTask @Inject constructor(
+    @get:Input val pluginConfigs: PluginConfigs
+) : DefaultTask() {
 
-    @get:Input
-    val configs: ExeManifest = config
+    // @OutputFile
+    // val myFile: File = File(fileName)
 
-//    @OutputFile
-//    val myFile: File = File(fileName)
+    private var mtFile: File? = null
 
     @TaskAction
     fun action() {
-        if (!configs.enabled.get()) return
-
-        // Copies the files from plugin JAR to a directory
-        val mtPath = temporaryDir.resolve("mt.exe")
-        val dllPath = mtPath.resolveSibling("midlrtmd.dll")
-        javaClass.getResourceAsStream("/mt_x64/${mtPath.name}")
-            ?.use { mtPath.outputStream().use(it::copyTo) }
-        javaClass.getResourceAsStream("/mt_x64/${dllPath.name}")
-            ?.use { dllPath.outputStream().use(it::copyTo) }
-
+        // TODO: Somehow replace with onlyIf {}
+        if (!pluginConfigs.enabled.get()) return
         project
             .tasks
             .withType(AbstractJPackageTask::class.java)
@@ -114,35 +101,51 @@ abstract class MyTask @Inject constructor(config: ExeManifest) : DefaultTask() {
             .map { it.first { it.extension == "exe" } }
             .onEach { project.logger.info("Embedding manifest in $it") }
             .onEach { it.setWritable(true) } // Ensures the file is not readonly
-            .onEach { appExe ->
-                ProcessBuilder()
-                    .command(
-                        mtPath.absolutePath,
-                        "-nologo",
-                        "-manifest", configs.manifestFile.get().asFile.absolutePath,
-                        "-outputresource:\"${appExe.absolutePath};#1\""
-                    )
-                    .directory(appExe.parentFile)
-                    .start()
-                    .inputReader()
-                    .forEachLine(::println)
-            }
+            .onEach { embedManifestIn(it) }
             .onEach { it.setWritable(false) }
-            .takeIf { configs.copyManifestToExeDirectory.get() }
-            ?.forEach { appExe ->
-                configs
-                    .manifestFile
-                    .get()
-                    .asFile
-                    .takeIf(File::exists)
-                    ?.takeIf(File::isFile)
-                    ?.inputStream()
-                    ?.use {
-                        appExe
-                            .resolveSibling("${appExe.name}.manifest")
-                            .outputStream()
-                            .use(it::copyTo)
-                    }
+            .takeIf { pluginConfigs.copyManifestToExeDirectory.get() }
+            ?.forEach { copyManifestFor(it) }
+    }
+
+    private fun copyManifestFor(exe: File) {
+        pluginConfigs
+            .manifestFile
+            .get()
+            .asFile
+            .takeIf(File::exists)
+            ?.takeIf(File::isFile)
+            ?.inputStream()
+            ?.use {
+                exe
+                    .resolveSibling("${exe.name}.manifest")
+                    .outputStream()
+                    .use(it::copyTo)
             }
+    }
+
+    private fun embedManifestIn(exe: File) {
+        ProcessBuilder()
+            .command(
+                getMtFile().absolutePath,
+                "-nologo",
+                "-manifest", pluginConfigs.manifestFile.get().asFile.absolutePath,
+                "-outputresource:\"${exe.absolutePath};#1\""
+            )
+            .directory(exe.parentFile)
+            .start()
+            .inputReader()
+            .forEachLine(::println)
+    }
+
+    private fun getMtFile(): File {
+        if (mtFile?.exists() == true) return mtFile!!
+        // Copies the files from plugin JAR to a directory
+        mtFile = temporaryDir.resolve("mt.exe")
+        val dllFile = mtFile?.resolveSibling("midlrtmd.dll")
+        javaClass.getResourceAsStream("/mt_x64/${mtFile?.name}")
+            ?.use { mtFile?.outputStream()?.use(it::copyTo) }
+        javaClass.getResourceAsStream("/mt_x64/${dllFile?.name}")
+            ?.use { dllFile?.outputStream()?.use(it::copyTo) }
+        return mtFile!!
     }
 }

@@ -21,7 +21,7 @@ gradlePlugin {
     plugins {
         create("compose-exe-manifest") {
             id = "ir.mahozad.compose-exe-manifest"
-            implementationClass = "ir.mahozad.manifest.ComposeExeManifest"
+            implementationClass = "ir.mahozad.manifest.EmbedPlugin"
             description = "Embeds application manifest XML file in Compose Multiplatform desktop exe file"
             displayName = "Compose Exe Manifest"
             website = "https://github.com/mahozad/compose-exe-manifest"
