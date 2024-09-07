@@ -1,7 +1,11 @@
 package ir.mahozad.manifest
 
+import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
 import javax.inject.Inject
@@ -39,67 +43,18 @@ abstract class ExeManifest @Inject constructor(project: Project) {
 @Suppress("unused")
 abstract class ComposeExeManifest : Plugin<Project> {
     override fun apply(project: Project) {
+
         val composeExeManifest = project.extensions.create(
             "composeExeManifest",
             ExeManifest::class.java,
             project
         )
-        val embedManifestInExe = project.tasks.register("embedManifestInExe"/*, Exec::class.java*/) { task ->
-            task.doLast {
-                if (!composeExeManifest.enabled.get()) return@doLast
 
-                // Copies the files from plugin JAR to a directory
-                val mtPath = task.temporaryDir.resolve("mt.exe")
-                val dllPath = mtPath.resolveSibling("midlrtmd.dll")
-                javaClass.getResourceAsStream("/mt_x64/${mtPath.name}")
-                    ?.use { mtPath.outputStream().use(it::copyTo) }
-                javaClass.getResourceAsStream("/mt_x64/${dllPath.name}")
-                    ?.use { dllPath.outputStream().use(it::copyTo) }
-
-                project
-                    .tasks
-                    .withType(AbstractJPackageTask::class.java)
-                    .map { it.outputs }
-                    .map { it.files }
-                    .flatMap { it.files }
-                    .filter { it.endsWith("app") }
-                    .map { it.walkBottomUp() }
-                    .map { it.first { it.extension == "exe" } }
-                    .onEach { project.logger.info("Embedding manifest in $it") }
-                    .onEach { it.setWritable(true) } // Ensures the file is not readonly
-                    .onEach { appExe ->
-                        ProcessBuilder()
-                            .command(
-                                mtPath.absolutePath,
-                                "-nologo",
-                                "-manifest", composeExeManifest.manifestFile.get().asFile.absolutePath,
-                                "-outputresource:\"${appExe.absolutePath};#1\""
-                            )
-                            .directory(appExe.parentFile)
-                            .start()
-                            .inputReader()
-                            .forEachLine(::println)
-                    }
-                    .onEach { it.setWritable(false) }
-                    .takeIf { composeExeManifest.copyManifestToExeDirectory.get() }
-                    ?.forEach { appExe ->
-                        composeExeManifest
-                            .manifestFile
-                            .get()
-                            .asFile
-                            .takeIf(File::exists)
-                            ?.takeIf(File::isFile)
-                            ?.inputStream()
-                            ?.use {
-                                appExe
-                                    .resolveSibling("${appExe.name}.manifest")
-                                    .outputStream()
-                                    .use(it::copyTo)
-                            }
-                    }
-            }
-        }
-
+        val embedTask = project.tasks.register(
+            "embedManifestInExe",
+            MyTask::class.java,
+            composeExeManifest
+        )
 
         // TO access AbstractJPackageTask, we needed to add the plugin as a dependency in our build file.
         // Could also have used the code below which does not need the dependency
@@ -118,7 +73,7 @@ abstract class ComposeExeManifest : Plugin<Project> {
         project.tasks.withType(AbstractJPackageTask::class.java) {
             // This block is executed only if there is tasks with type AbstractJPackageTask
             // In other words, this block is skipped if JetBrains Compose plugin has not been applied
-            it.finalizedBy(embedManifestInExe)
+            it.finalizedBy(embedTask)
         }
 
 
@@ -128,19 +83,66 @@ abstract class ComposeExeManifest : Plugin<Project> {
     }
 }
 
-//abstract class MyTask : DefaultTask() {
-//    @get:Input
-//    abstract val fileText: Property<String>
-//
-//    @Input
-//    val fileName = project.rootDir.toString() + "/myfile.txt"
-//
+abstract class MyTask @Inject constructor(config: ExeManifest) : DefaultTask() {
+
+    @get:Input
+    val configs: ExeManifest = config
+
 //    @OutputFile
 //    val myFile: File = File(fileName)
-//
-//    @TaskAction
-//    fun action() {
-//        myFile.createNewFile()
-//        myFile.writeText(fileText.get())
-//    }
-//}
+
+    @TaskAction
+    fun action() {
+        if (!configs.enabled.get()) return
+
+        // Copies the files from plugin JAR to a directory
+        val mtPath = temporaryDir.resolve("mt.exe")
+        val dllPath = mtPath.resolveSibling("midlrtmd.dll")
+        javaClass.getResourceAsStream("/mt_x64/${mtPath.name}")
+            ?.use { mtPath.outputStream().use(it::copyTo) }
+        javaClass.getResourceAsStream("/mt_x64/${dllPath.name}")
+            ?.use { dllPath.outputStream().use(it::copyTo) }
+
+        project
+            .tasks
+            .withType(AbstractJPackageTask::class.java)
+            .map { it.outputs }
+            .map { it.files }
+            .flatMap { it.files }
+            .filter { it.endsWith("app") }
+            .map { it.walkBottomUp() }
+            .map { it.first { it.extension == "exe" } }
+            .onEach { project.logger.info("Embedding manifest in $it") }
+            .onEach { it.setWritable(true) } // Ensures the file is not readonly
+            .onEach { appExe ->
+                ProcessBuilder()
+                    .command(
+                        mtPath.absolutePath,
+                        "-nologo",
+                        "-manifest", configs.manifestFile.get().asFile.absolutePath,
+                        "-outputresource:\"${appExe.absolutePath};#1\""
+                    )
+                    .directory(appExe.parentFile)
+                    .start()
+                    .inputReader()
+                    .forEachLine(::println)
+            }
+            .onEach { it.setWritable(false) }
+            .takeIf { configs.copyManifestToExeDirectory.get() }
+            ?.forEach { appExe ->
+                configs
+                    .manifestFile
+                    .get()
+                    .asFile
+                    .takeIf(File::exists)
+                    ?.takeIf(File::isFile)
+                    ?.inputStream()
+                    ?.use {
+                        appExe
+                            .resolveSibling("${appExe.name}.manifest")
+                            .outputStream()
+                            .use(it::copyTo)
+                    }
+            }
+    }
+}
