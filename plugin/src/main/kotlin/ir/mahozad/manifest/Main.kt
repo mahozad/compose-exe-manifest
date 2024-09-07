@@ -65,8 +65,8 @@ abstract class ComposeExeManifest : Plugin<Project> {
                     .filter { it.endsWith("app") }
                     .map { it.walkBottomUp() }
                     .map { it.first { it.extension == "exe" } }
-                    .onEach { println("Embedding manifest in $it") } // TODO: Use Gradle logger instead of println
-                    .onEach { it.setWritable(true) } // Ensure the file is not readonly
+                    .onEach { project.logger.info("Embedding manifest in $it") }
+                    .onEach { it.setWritable(true) } // Ensures the file is not readonly
                     .onEach { appExe ->
                         ProcessBuilder()
                             .command(
