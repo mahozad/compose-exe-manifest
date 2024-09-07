@@ -8,46 +8,22 @@ import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
 import javax.inject.Inject
 
-// See https://github.com/JetBrains/compose-multiplatform/tree/master/gradle-plugins
-
-abstract class PluginConfigs @Inject constructor(project: Project) {
-    /**
-     * Whether the embedding is enabled.
-     *
-     * Defaults to `true`.
-     */
-    val enabled = project.objects.property<Boolean>(Boolean::class.java).value(true)
-
-    /**
-     * The manifest file to embed in app exe.
-     * Its content is not validated by the plugin.
-     *
-     * Defaults to `app.manifest` at the project/module directory.
-     */
-    val manifestFile = project.objects.fileProperty().value { File("app.manifest") }
-
-    /**
-     * Whether to copy the manifest file to where the app exe resides.
-     *
-     * Defaults to `false`.
-     */
-    val copyManifestToExeDirectory = project.objects.property(Boolean::class.java).value(false)
-}
+// Example plugin: https://github.com/JetBrains/compose-multiplatform/tree/master/gradle-plugins
 
 @Suppress("unused")
 abstract class EmbedPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
-        val pluginConfigs = project.extensions.create(
+        val embedExtension = project.extensions.create(
             "composeExeManifest",
-            PluginConfigs::class.java,
+            EmbedExtension::class.java,
             project
         )
 
         val embedTask = project.tasks.register(
             "embedManifestInExe",
             EmbedTask::class.java,
-            pluginConfigs
+            embedExtension
         )
 
         // TO access AbstractJPackageTask, we needed to add the plugin as a dependency in our build file.
@@ -72,16 +48,42 @@ abstract class EmbedPlugin : Plugin<Project> {
     }
 }
 
+abstract class EmbedExtension @Inject constructor(project: Project) {
+    /**
+     * Whether the embedding is enabled.
+     *
+     * Defaults to `true`.
+     */
+    val enabled = project.objects.property<Boolean>(Boolean::class.java).value(true)
+
+    /**
+     * The manifest file to embed in app exe.
+     * Its content is not validated by the plugin.
+     *
+     * Defaults to `app.manifest` at the project/module directory.
+     */
+    val manifestFile = project.objects.fileProperty().value { File("app.manifest") }
+
+    /**
+     * Whether to copy the manifest file to where the app exe resides.
+     *
+     * Defaults to `false`.
+     */
+    val copyManifestToExeDirectory = project.objects.property(Boolean::class.java).value(false)
+}
+
 // It’s beneficial to make the class abstract because Gradle will handle many things automatically.
 abstract class EmbedTask @Inject constructor(
-    private val pluginConfigs: PluginConfigs
+    private val pluginConfigs: EmbedExtension
 ) : DefaultTask() {
 
-    // @OutputFile
-    // val myFile: File = File(fileName)
+    init {
+        onlyIf { pluginConfigs.enabled.get() }
+        group = "compose desktop"
+        description = "Embeds a manifest file in the app exe"
+    }
 
     private val mtFile: File by lazy {
-        // Copies the files from plugin JAR to a directory
         val mtFile = temporaryDir.resolve("mt.exe")
         val dllFile = mtFile.resolveSibling("midlrtmd.dll")
         javaClass.getResourceAsStream("/mt_x64/${mtFile.name}")
@@ -91,32 +93,26 @@ abstract class EmbedTask @Inject constructor(
         mtFile
     }
 
-    init {
-        onlyIf { pluginConfigs.enabled.get() }
-        group = "compose desktop"
-        description = "Embeds the specified manifest file in the app exe"
-    }
-
     @TaskAction
     fun action() {
         project
             .tasks
             .withType(AbstractJPackageTask::class.java)
-            .map { it.outputs }
-            .map { it.files }
-            .flatMap { it.files }
+            .map { it.destinationDir }
+            .map { it.asFile }
+            .map { it.get() }
             .filter { it.endsWith("app") }
-            .map { it.walkBottomUp() }
+            .map { it.walk() }
             .map { it.first { it.extension == "exe" } }
             .onEach { logger.info("Embedding manifest in $it") }
             .onEach { it.setWritable(true) } // Ensures the file is not readonly
             .onEach { embedManifestIn(it) }
             .onEach { it.setWritable(false) }
             .takeIf { pluginConfigs.copyManifestToExeDirectory.get() }
-            ?.forEach { copyManifestFor(it) }
+            ?.forEach { copyManifestTo(it.resolveSibling("${it.name}.manifest")) }
     }
 
-    private fun copyManifestFor(exe: File) {
+    private fun copyManifestTo(destination: File) {
         pluginConfigs
             .manifestFile
             .get()
@@ -124,12 +120,7 @@ abstract class EmbedTask @Inject constructor(
             .takeIf(File::exists)
             ?.takeIf(File::isFile)
             ?.inputStream()
-            ?.use {
-                exe
-                    .resolveSibling("${exe.name}.manifest")
-                    .outputStream()
-                    .use(it::copyTo)
-            }
+            ?.let { destination.outputStream().use(it::copyTo) }
     }
 
     private fun embedManifestIn(exe: File) {
