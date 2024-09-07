@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
@@ -89,7 +90,7 @@ abstract class EmbedTask @Inject constructor(
     @TaskAction
     fun action() {
         // TODO: Somehow replace with onlyIf {}
-        if (!pluginConfigs.enabled.get()) return
+        if (!pluginConfigs.enabled.get()) throw StopExecutionException("Skipping the task because enabled == false")
         project
             .tasks
             .withType(AbstractJPackageTask::class.java)
