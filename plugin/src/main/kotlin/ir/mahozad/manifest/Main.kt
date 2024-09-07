@@ -21,15 +21,15 @@ abstract class ExeManifest @Inject constructor(project: Project) {
     val enabled = project.objects.property<Boolean>(Boolean::class.java).value(true)
 
     /**
-     * The manifest file. It is not validated by the plugin.
+     * The manifest file to embed in app exe.
+     * Its content is not validated by the plugin.
      *
      * Defaults to `app.manifest` at the project/module directory.
      */
-    val manifestFile = project.objects.fileProperty().value { (File("app.manifest")) }
-    // var manifestFile = project.file("app.manifest")
+    val manifestFile = project.objects.fileProperty().value { File("app.manifest") }
 
     /**
-     * Whether to copy the manifest beside the exe file.
+     * Whether to copy the manifest file to where the app exe resides.
      *
      * Defaults to `false`.
      */
