@@ -74,6 +74,7 @@ abstract class ComposeExeManifest : Plugin<Project> {
                     // TODO: Use Gradle logger instead of println
                     .onEach { println("Embedding manifest in $it") }
                     .forEach { appExe ->
+                        // Makes the file from readonly to writable
                         appExe.setWritable(true)
                         ProcessBuilder()
                             .command(
