@@ -7,6 +7,7 @@ plugins {
 }
 
 composeExeManifest {
+    enabled = true
     manifestFile = file("example.manifest")
     copyManifestToExeDirectory = false
 }

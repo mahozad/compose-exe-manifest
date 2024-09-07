@@ -12,6 +12,7 @@ plugins {
 }
 
 composeExeManifest {
+    enabled = true
     manifestFile = file("app.manifest") // Located beside the build file
     copyManifestToExeDirectory = false
 }

@@ -19,6 +19,13 @@ import kotlin.io.path.outputStream
 
 abstract class ExeManifest @Inject constructor(project: Project) {
     /**
+     * Whether the embedding is enabled.
+     *
+     * Defaults to `true`.
+     */
+    val enabled = project.objects.property<Boolean>(Boolean::class.java).value(true)
+
+    /**
      * The manifest file. It is not validated by the plugin.
      *
      * Defaults to `app.manifest` at the project/module directory.
@@ -42,9 +49,10 @@ abstract class ComposeExeManifest : Plugin<Project> {
             ExeManifest::class.java,
             project
         )
-
         val embedManifestInExe = project.tasks.register("embedManifestInExe"/*, Exec::class.java*/) {
             it.doLast {
+                if (!composeExeManifest.enabled.get()) return@doLast
+
                 val appExeFiles = project
                     .tasks
                     .filter { it.name in setOf("createDistributable", "createReleaseDistributable") }
