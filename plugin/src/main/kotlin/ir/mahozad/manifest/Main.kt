@@ -3,8 +3,6 @@ package ir.mahozad.manifest
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
@@ -78,19 +76,33 @@ abstract class EmbedPlugin : Plugin<Project> {
     }
 }
 
+// It’s beneficial to make the class abstract because Gradle will handle many things automatically.
 abstract class EmbedTask @Inject constructor(
-    @get:Input val pluginConfigs: PluginConfigs
+    private val pluginConfigs: PluginConfigs
 ) : DefaultTask() {
 
     // @OutputFile
     // val myFile: File = File(fileName)
 
-    private var mtFile: File? = null
+    private val mtFile: File by lazy {
+        // Copies the files from plugin JAR to a directory
+        val mtFile = temporaryDir.resolve("mt.exe")
+        val dllFile = mtFile.resolveSibling("midlrtmd.dll")
+        javaClass.getResourceAsStream("/mt_x64/${mtFile.name}")
+            ?.use { mtFile.outputStream().use(it::copyTo) }
+        javaClass.getResourceAsStream("/mt_x64/${dllFile.name}")
+            ?.use { dllFile.outputStream().use(it::copyTo) }
+        mtFile
+    }
+
+    init {
+        onlyIf { pluginConfigs.enabled.get() }
+        group = "compose desktop"
+        description = "Embeds the specified manifest file in the app exe"
+    }
 
     @TaskAction
     fun action() {
-        // TODO: Somehow replace with onlyIf {}
-        if (!pluginConfigs.enabled.get()) throw StopExecutionException("Skipping the task because enabled == false")
         project
             .tasks
             .withType(AbstractJPackageTask::class.java)
@@ -100,7 +112,7 @@ abstract class EmbedTask @Inject constructor(
             .filter { it.endsWith("app") }
             .map { it.walkBottomUp() }
             .map { it.first { it.extension == "exe" } }
-            .onEach { project.logger.info("Embedding manifest in $it") }
+            .onEach { logger.info("Embedding manifest in $it") }
             .onEach { it.setWritable(true) } // Ensures the file is not readonly
             .onEach { embedManifestIn(it) }
             .onEach { it.setWritable(false) }
@@ -127,7 +139,7 @@ abstract class EmbedTask @Inject constructor(
     private fun embedManifestIn(exe: File) {
         ProcessBuilder()
             .command(
-                getMtFile().absolutePath,
+                mtFile.absolutePath,
                 "-nologo",
                 "-manifest", pluginConfigs.manifestFile.get().asFile.absolutePath,
                 "-outputresource:\"${exe.absolutePath};#1\""
@@ -136,17 +148,5 @@ abstract class EmbedTask @Inject constructor(
             .start()
             .inputReader()
             .forEachLine(::println)
-    }
-
-    private fun getMtFile(): File {
-        if (mtFile?.exists() == true) return mtFile!!
-        // Copies the files from plugin JAR to a directory
-        mtFile = temporaryDir.resolve("mt.exe")
-        val dllFile = mtFile?.resolveSibling("midlrtmd.dll")
-        javaClass.getResourceAsStream("/mt_x64/${mtFile?.name}")
-            ?.use { mtFile?.outputStream()?.use(it::copyTo) }
-        javaClass.getResourceAsStream("/mt_x64/${dllFile?.name}")
-            ?.use { dllFile?.outputStream()?.use(it::copyTo) }
-        return mtFile!!
     }
 }
