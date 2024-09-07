@@ -22,6 +22,16 @@ gradlePlugin {
         create("compose-exe-manifest") {
             id = "ir.mahozad.compose-exe-manifest"
             implementationClass = "ir.mahozad.manifest.ComposeExeManifest"
+            description = "Embeds application manifest XML file in Compose Multiplatform desktop exe file"
+            displayName = "Compose Exe Manifest"
+            website = "https://github.com/mahozad/compose-exe-manifest"
+            vcsUrl = "https://github.com/mahozad/compose-exe-manifest"
+            tags = listOf(
+                "compose-multiplatform",
+                "application-manifest",
+                "manifest",
+                "exe"
+            )
         }
     }
 }
