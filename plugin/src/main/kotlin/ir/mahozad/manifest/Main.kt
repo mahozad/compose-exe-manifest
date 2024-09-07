@@ -48,16 +48,6 @@ abstract class ComposeExeManifest : Plugin<Project> {
             task.doLast {
                 if (!composeExeManifest.enabled.get()) return@doLast
 
-                val appExeFiles = project
-                    .tasks
-                    .withType(AbstractJPackageTask::class.java)
-                    .map { it.outputs }
-                    .map { it.files }
-                    .flatMap { it.files }
-                    .filter { it.endsWith("app") }
-                    .map { it.walkBottomUp() }
-                    .map { it.first { it.extension == "exe" } }
-
                 // Copies the files from plugin JAR to a directory
                 val mtPath = task.temporaryDir.resolve("mt.exe")
                 val dllPath = mtPath.resolveSibling("midlrtmd.dll")
@@ -66,12 +56,18 @@ abstract class ComposeExeManifest : Plugin<Project> {
                 javaClass.getResourceAsStream("/mt_x64/${dllPath.name}")
                     ?.use { dllPath.outputStream().use(it::copyTo) }
 
-                appExeFiles
-                    // TODO: Use Gradle logger instead of println
-                    .onEach { println("Embedding manifest in $it") }
-                    .forEach { appExe ->
-                        // Makes the file from readonly to writable
-                        appExe.setWritable(true)
+                project
+                    .tasks
+                    .withType(AbstractJPackageTask::class.java)
+                    .map { it.outputs }
+                    .map { it.files }
+                    .flatMap { it.files }
+                    .filter { it.endsWith("app") }
+                    .map { it.walkBottomUp() }
+                    .map { it.first { it.extension == "exe" } }
+                    .onEach { println("Embedding manifest in $it") } // TODO: Use Gradle logger instead of println
+                    .onEach { it.setWritable(true) } // Ensure the file is not readonly
+                    .onEach { appExe ->
                         ProcessBuilder()
                             .command(
                                 mtPath.absolutePath,
@@ -84,8 +80,6 @@ abstract class ComposeExeManifest : Plugin<Project> {
                             .inputReader()
                             .forEachLine(::println)
                     }
-
-                appExeFiles
                     .onEach { it.setWritable(false) }
                     .takeIf { composeExeManifest.copyManifestToExeDirectory.get() }
                     ?.forEach { appExe ->
