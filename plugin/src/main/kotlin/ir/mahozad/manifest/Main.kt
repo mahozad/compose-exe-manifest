@@ -50,12 +50,13 @@ abstract class ComposeExeManifest : Plugin<Project> {
 
                 val appExeFiles = project
                     .tasks
-                    .filter { it.name in setOf("createDistributable", "createReleaseDistributable") }
+                    .withType(AbstractJPackageTask::class.java)
                     .map { it.outputs }
                     .map { it.files }
                     .flatMap { it.files }
-                    .map { it.walk() }
-                    .flatMap { it.filter { it.extension.equals("exe", ignoreCase = true) } }
+                    .filter { it.endsWith("app") }
+                    .map { it.walkBottomUp() }
+                    .map { it.first { it.extension == "exe" } }
 
                 // Copies the files from plugin JAR to a directory
                 val mtPath = task.temporaryDir.resolve("mt.exe")
