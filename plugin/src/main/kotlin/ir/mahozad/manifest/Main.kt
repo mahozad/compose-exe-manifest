@@ -30,8 +30,8 @@ abstract class ExeManifest @Inject constructor(project: Project) {
      *
      * Defaults to `app.manifest` at the project/module directory.
      */
-    var manifestFile = project.file("app.manifest")
-    // val file = project.objects.fileProperty().value { File("manifest.xml") }
+    val manifestFile = project.objects.fileProperty().value { (File("app.manifest")) }
+    // var manifestFile = project.file("app.manifest")
 
     /**
      * Whether to copy the manifest beside the exe file.
@@ -80,7 +80,7 @@ abstract class ComposeExeManifest : Plugin<Project> {
                             .command(
                                 mtPath.absolutePathString(),
                                 "-nologo",
-                                "-manifest", composeExeManifest.manifestFile.absolutePath,
+                                "-manifest", composeExeManifest.manifestFile.get().asFile.absolutePath,
                                 "-outputresource:\"${appExe.absolutePath};#1\""
                             )
                             .directory(appExe.parentFile)
@@ -95,6 +95,8 @@ abstract class ComposeExeManifest : Plugin<Project> {
                     ?.forEach { appExe ->
                         composeExeManifest
                             .manifestFile
+                            .get()
+                            .asFile
                             .takeIf(File::exists)
                             ?.takeIf(File::isFile)
                             ?.inputStream()
