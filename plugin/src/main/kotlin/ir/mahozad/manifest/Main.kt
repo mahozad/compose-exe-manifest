@@ -26,7 +26,7 @@ abstract class EmbedPlugin : Plugin<Project> {
             project
         )
 
-        // TO access AbstractJPackageTask, we needed to add the plugin as a dependency in our build file.
+        // To access AbstractJPackageTask, we needed to add CMP plugin as a dependency in our build file.
         // Could also have used the code below which does not need the dependency
         // on JetBrains Compose plugin in our dependencies {}
         // but it would not even be invoked when the user executed tasks like packageExe.
@@ -46,14 +46,13 @@ abstract class EmbedPlugin : Plugin<Project> {
             //  probably because we don't know where the temporary app exe file is stored before being packaged
             if ("package" in composePackagingTask.name) return@withType
 
-            val exeDirectory = composePackagingTask.destinationDir
             val embedTask = project.tasks.register(
                 "embedManifestInExeFor${composePackagingTask.name.capitalized()}",
                 EmbedTask::class.java,
             ) {
                 it.enabled = embedExtension.enabled.get()
                 it.manifestFile = embedExtension.manifestFile.asFile
-                it.exeDirectory = exeDirectory
+                it.exeDirectory = composePackagingTask.destinationDir
                 it.copyManifestToExeDirectory = embedExtension.copyManifestToExeDirectory
             }
             composePackagingTask.finalizedBy(embedTask)
