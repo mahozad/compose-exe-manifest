@@ -27,36 +27,39 @@ abstract class EmbedPlugin : Plugin<Project> {
         )
 
         // To access AbstractJPackageTask, we needed to add CMP plugin as a dependency in our build file.
-        // Could also have used the code below which does not need the dependency
-        // on JetBrains Compose plugin in our dependencies {}
-        // but it would not even be invoked when the user executed tasks like packageExe.
-        // In addition, we need to wrap the code in project.afterEvaluate {} (not recommended) to ensure
+        //
+        // Instead of using Kotlin filter, map, forEach, etc. the Gradle withType, matching, all etc. are used
+        // which are live and execute their actions when new tasks are added later.
+        // Also, this block is executed only if there is tasks with type AbstractJPackageTask
+        // In other words, this block is skipped if JetBrains Compose plugin has not been applied
+        //
+        // Could also have used the code below which does not need the dependency on CMP plugin in our dependencies{}.
+        // But we need to wrap the code in project.afterEvaluate{} (not recommended) to ensure
         // the search for tasks is executed after the build init and configuration phase has been completed
-        // because those JetBrains Compose adds its tasks during or after project init/configuration
+        // because CMP plugin adds its tasks during or after project init/configuration.
         // project.afterEvaluate {
         //     project.tasks
         //         .filter { it.name in setOf("createDistributable", "createReleaseDistributable") }
         //         .forEach { it.finalizedBy(embedManifestInExe) }
         // }
-        project.tasks.withType(AbstractJPackageTask::class.java) { composePackagingTask ->
-            // This block is executed only if there is tasks with type AbstractJPackageTask
-            // In other words, this block is skipped if JetBrains Compose plugin has not been applied
-
+        project
+            .tasks
+            .withType(AbstractJPackageTask::class.java)
             // FIXME: When user runs CMP packageExe task, our task is executed but has no effect
             //  probably because we don't know where the temporary app exe file is stored before being packaged
-            if ("package" in composePackagingTask.name) return@withType
-
-            val embedTask = project.tasks.register(
-                "embedManifestInExeFor${composePackagingTask.name.capitalized()}",
-                EmbedTask::class.java,
-            ) {
-                it.enabled = embedExtension.enabled.get()
-                it.manifestMode = embedExtension.manifestMode
-                it.manifestFile = embedExtension.manifestFile.asFile
-                it.exeDirectory = composePackagingTask.destinationDir
+            .matching { "package" !in it.name }
+            .all { composePackagingTask ->
+                val embedTask = project.tasks.register(
+                    "embedManifestInExeFor${composePackagingTask.name.capitalized()}",
+                    EmbedTask::class.java,
+                ) {
+                    it.enabled = embedExtension.enabled.get()
+                    it.manifestMode = embedExtension.manifestMode
+                    it.manifestFile = embedExtension.manifestFile.asFile
+                    it.exeDirectory = composePackagingTask.destinationDir
+                }
+                composePackagingTask.finalizedBy(embedTask)
             }
-            composePackagingTask.finalizedBy(embedTask)
-        }
     }
 }
 
