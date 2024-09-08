@@ -8,7 +8,7 @@ A Gradle plugin for [Compose Multiplatform][1] projects to embed a [manifest][2]
 ```kotlin
 plugins {
     // ...
-    id("ir.mahozad.compose-exe-manifest") version "0.1.0"
+    id("ir.mahozad.compose-exe-manifest") version "0.2.0"
 }
 
 composeExeManifest {

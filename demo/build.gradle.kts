@@ -3,7 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.compose")
-    id("ir.mahozad.compose-exe-manifest") version "0.1.0"
+    id("ir.mahozad.compose-exe-manifest") version "0.2.0"
 }
 
 composeExeManifest {
