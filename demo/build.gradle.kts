@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
+import ir.mahozad.manifest.ManifestMode
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -8,8 +9,8 @@ plugins {
 
 composeExeManifest {
     enabled = true
+    manifestMode = ManifestMode.EMBED
     manifestFile = file("example.manifest")
-    copyManifestToExeDirectory = false
 }
 
 dependencies {

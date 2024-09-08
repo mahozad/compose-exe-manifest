@@ -6,6 +6,8 @@ A Gradle plugin for [Compose Multiplatform][1] projects to embed a [manifest][2]
 ### Usage
 
 ```kotlin
+import ir.mahozad.manifest.ManifestMode
+
 plugins {
     // ...
     id("ir.mahozad.compose-exe-manifest") version "0.2.0"
@@ -13,8 +15,8 @@ plugins {
 
 composeExeManifest {
     enabled = true
+    manifestMode = ManifestMode.EMBED
     manifestFile = file("app.manifest") // Located beside the build file
-    copyManifestToExeDirectory = false
 }
 ```
 

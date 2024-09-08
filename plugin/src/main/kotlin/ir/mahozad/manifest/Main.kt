@@ -51,9 +51,9 @@ abstract class EmbedPlugin : Plugin<Project> {
                 EmbedTask::class.java,
             ) {
                 it.enabled = embedExtension.enabled.get()
+                it.manifestMode = embedExtension.manifestMode
                 it.manifestFile = embedExtension.manifestFile.asFile
                 it.exeDirectory = composePackagingTask.destinationDir
-                it.copyManifestToExeDirectory = embedExtension.copyManifestToExeDirectory
             }
             composePackagingTask.finalizedBy(embedTask)
         }
@@ -62,7 +62,7 @@ abstract class EmbedPlugin : Plugin<Project> {
 
 abstract class EmbedExtension @Inject constructor(project: Project) {
     /**
-     * Whether the embedding is enabled.
+     * Whether the embedding/copying is enabled.
      *
      * Defaults to `true`.
      */
@@ -77,11 +77,34 @@ abstract class EmbedExtension @Inject constructor(project: Project) {
     val manifestFile = project.objects.fileProperty().value { File("app.manifest") }
 
     /**
-     * Whether to copy the manifest file to where the app exe resides.
+     * Whether to embed the manifest in the app exe or to copy it to the app exe directory or both.
      *
-     * Defaults to `false`.
+     * Defaults to [ManifestMode.EMBED].
      */
-    val copyManifestToExeDirectory = project.objects.property(Boolean::class.java).value(false)
+    val manifestMode = project.objects.property(ManifestMode::class.java).value(ManifestMode.EMBED)
+}
+
+@Suppress("unused")
+/**
+ * Whether to embed the manifest in the app exe or to copy it to the app exe directory or both.
+ */
+enum class ManifestMode {
+    /**
+     * Embeds the manifest file in the app exe.
+     */
+    EMBED,
+
+    /**
+     * Copies the manifest file to the app exe directory.
+     */
+    COPY,
+
+    /**
+     * Copies the manifest file to the app exe directory and also embeds the manifest in the app exe.
+     */
+    COPY_AND_EMBED;
+
+    val shouldEmbed get() = this == EMBED || this == COPY_AND_EMBED
 }
 
 // The class is made abstract so that Gradle will handle many things automatically.
@@ -92,14 +115,14 @@ abstract class EmbedTask : DefaultTask() {
         description = "Embeds a manifest file in the app exe"
     }
 
+    @get:Input
+    lateinit var manifestMode: Provider<ManifestMode>
+
     @get:InputFile
     lateinit var manifestFile: Provider<File>
 
     @get:InputDirectory
     lateinit var exeDirectory: Provider<Directory>
-
-    @get:Input
-    lateinit var copyManifestToExeDirectory: Provider<Boolean>
 
     private val mtExe: File by lazy {
         val mtFile = temporaryDir.resolve("mt.exe")
@@ -118,12 +141,16 @@ abstract class EmbedTask : DefaultTask() {
             .asFile
             .walk()
             .firstOrNull { it.extension == "exe" }
-        exeFile?.let { logger.info("Embedding manifest in $it") }
-        exeFile?.setWritable(true) // Ensures the file is not readonly
-        exeFile?.let(::embedManifestIn)
-        exeFile?.setWritable(false)
-        if (copyManifestToExeDirectory.get() && exeFile != null) {
-            copyManifestTo(exeFile.resolveSibling("${exeFile.name}.manifest"))
+            ?: return
+        if (manifestMode.get().shouldEmbed) {
+            logger.info("Embedding manifest in $exeFile")
+            exeFile.setWritable(true) // Ensures the file is not readonly
+            embedManifestIn(exeFile)
+            exeFile.setWritable(false)
+        } else {
+            val manifestName = "${exeFile.name}.manifest"
+            logger.info("Copying manifest as $manifestName")
+            copyManifestTo(exeFile.resolveSibling(manifestName))
         }
     }
 
