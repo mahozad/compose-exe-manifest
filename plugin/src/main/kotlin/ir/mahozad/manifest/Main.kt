@@ -119,6 +119,8 @@ abstract class EmbedTask : DefaultTask() {
     lateinit var manifestMode: Provider<ManifestMode>
 
     @get:InputFile
+    // It's not needed to check for existence of the file or if it's a directory.
+    // Because it has been declared as an @InputFile and Gradle automatically does that.
     lateinit var manifestFile: Provider<File>
 
     @get:InputDirectory
@@ -157,10 +159,8 @@ abstract class EmbedTask : DefaultTask() {
     private fun copyManifestTo(destination: File) {
         manifestFile
             .get()
-            .takeIf(File::exists)
-            ?.takeIf(File::isFile)
-            ?.inputStream()
-            ?.let { destination.outputStream().use(it::copyTo) }
+            .inputStream()
+            .let { destination.outputStream().use(it::copyTo) }
     }
 
     private fun embedManifestIn(exe: File) {
