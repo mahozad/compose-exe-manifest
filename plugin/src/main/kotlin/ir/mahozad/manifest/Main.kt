@@ -3,7 +3,13 @@ package ir.mahozad.manifest
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.internal.extensions.stdlib.capitalized
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import java.io.File
 import javax.inject.Inject
@@ -20,12 +26,6 @@ abstract class EmbedPlugin : Plugin<Project> {
             project
         )
 
-        val embedTask = project.tasks.register(
-            "embedManifestInExe",
-            EmbedTask::class.java,
-            embedExtension
-        )
-
         // TO access AbstractJPackageTask, we needed to add the plugin as a dependency in our build file.
         // Could also have used the code below which does not need the dependency
         // on JetBrains Compose plugin in our dependencies {}
@@ -38,12 +38,25 @@ abstract class EmbedPlugin : Plugin<Project> {
         //         .filter { it.name in setOf("createDistributable", "createReleaseDistributable") }
         //         .forEach { it.finalizedBy(embedManifestInExe) }
         // }
-        // FIXME: When user runs packageExe task, our task is executed but has no effect
-        //  probably because we don't know where the temporary app exe file is stored before being packaged
-        project.tasks.withType(AbstractJPackageTask::class.java) {
+        project.tasks.withType(AbstractJPackageTask::class.java) { composePackagingTask ->
             // This block is executed only if there is tasks with type AbstractJPackageTask
             // In other words, this block is skipped if JetBrains Compose plugin has not been applied
-            it.finalizedBy(embedTask)
+
+            // FIXME: When user runs CMP packageExe task, our task is executed but has no effect
+            //  probably because we don't know where the temporary app exe file is stored before being packaged
+            if ("package" in composePackagingTask.name) return@withType
+
+            val exeDirectory = composePackagingTask.destinationDir
+            val embedTask = project.tasks.register(
+                "embedManifestInExeFor${composePackagingTask.name.capitalized()}",
+                EmbedTask::class.java,
+            ) {
+                it.enabled = embedExtension.enabled.get()
+                it.manifestFile = embedExtension.manifestFile.asFile
+                it.exeDirectory = exeDirectory
+                it.copyManifestToExeDirectory = embedExtension.copyManifestToExeDirectory
+            }
+            composePackagingTask.finalizedBy(embedTask)
         }
     }
 }
@@ -72,18 +85,24 @@ abstract class EmbedExtension @Inject constructor(project: Project) {
     val copyManifestToExeDirectory = project.objects.property(Boolean::class.java).value(false)
 }
 
-// It’s beneficial to make the class abstract because Gradle will handle many things automatically.
-abstract class EmbedTask @Inject constructor(
-    private val pluginConfigs: EmbedExtension
-) : DefaultTask() {
+// The class is made abstract so that Gradle will handle many things automatically.
+abstract class EmbedTask : DefaultTask() {
 
     init {
-        onlyIf { pluginConfigs.enabled.get() }
         group = "compose desktop"
         description = "Embeds a manifest file in the app exe"
     }
 
-    private val mtFile: File by lazy {
+    @get:InputFile
+    lateinit var manifestFile: Provider<File>
+
+    @get:InputDirectory
+    lateinit var exeDirectory: Provider<Directory>
+
+    @get:Input
+    lateinit var copyManifestToExeDirectory: Provider<Boolean>
+
+    private val mtExe: File by lazy {
         val mtFile = temporaryDir.resolve("mt.exe")
         val dllFile = mtFile.resolveSibling("midlrtmd.dll")
         javaClass.getResourceAsStream("/mt_x64/${mtFile.name}")
@@ -95,28 +114,23 @@ abstract class EmbedTask @Inject constructor(
 
     @TaskAction
     fun action() {
-        project
-            .tasks
-            .withType(AbstractJPackageTask::class.java)
-            .map { it.destinationDir }
-            .map { it.asFile }
-            .map { it.get() }
-            .filter { it.endsWith("app") }
-            .map { it.walk() }
-            .map { it.first { it.extension == "exe" } }
-            .onEach { logger.info("Embedding manifest in $it") }
-            .onEach { it.setWritable(true) } // Ensures the file is not readonly
-            .onEach { embedManifestIn(it) }
-            .onEach { it.setWritable(false) }
-            .takeIf { pluginConfigs.copyManifestToExeDirectory.get() }
-            ?.forEach { copyManifestTo(it.resolveSibling("${it.name}.manifest")) }
+        val exeFile = exeDirectory
+            .get()
+            .asFile
+            .walk()
+            .firstOrNull { it.extension == "exe" }
+        exeFile?.let { logger.info("Embedding manifest in $it") }
+        exeFile?.setWritable(true) // Ensures the file is not readonly
+        exeFile?.let(::embedManifestIn)
+        exeFile?.setWritable(false)
+        if (copyManifestToExeDirectory.get() && exeFile != null) {
+            copyManifestTo(exeFile.resolveSibling("${exeFile.name}.manifest"))
+        }
     }
 
     private fun copyManifestTo(destination: File) {
-        pluginConfigs
-            .manifestFile
+        manifestFile
             .get()
-            .asFile
             .takeIf(File::exists)
             ?.takeIf(File::isFile)
             ?.inputStream()
@@ -126,9 +140,9 @@ abstract class EmbedTask @Inject constructor(
     private fun embedManifestIn(exe: File) {
         ProcessBuilder()
             .command(
-                mtFile.absolutePath,
+                mtExe.absolutePath,
                 "-nologo",
-                "-manifest", pluginConfigs.manifestFile.get().asFile.absolutePath,
+                "-manifest", manifestFile.get().absolutePath,
                 "-outputresource:\"${exe.absolutePath};#1\""
             )
             .directory(exe.parentFile)
