@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "ir.mahozad"
-version = "0.3.0"
+version = "0.4.0"
 
 dependencies {
     // Found the id of the plugin as described in https://stackoverflow.com/q/74221701

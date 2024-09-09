@@ -10,7 +10,7 @@ import ir.mahozad.manifest.ManifestMode
 
 plugins {
     // ...
-    id("ir.mahozad.compose-exe-manifest") version "0.3.0"
+    id("ir.mahozad.compose-exe-manifest") version "0.4.0"
 }
 
 composeExeManifest {
