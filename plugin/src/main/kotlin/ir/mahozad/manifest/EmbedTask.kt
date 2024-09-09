@@ -88,7 +88,7 @@ abstract class EmbedTask : DefaultTask() {
         manifestFile
             .get()
             .inputStream()
-            .let { destination.outputStream().use(it::copyTo) }
+            .use { destination.outputStream().use(it::copyTo) }
     }
 
     private fun embedManifestIn(exe: File) {
