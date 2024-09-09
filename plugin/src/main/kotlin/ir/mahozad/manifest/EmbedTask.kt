@@ -75,7 +75,7 @@ abstract class EmbedTask : DefaultTask() {
             val manifestName = "${exeFile.name}.manifest"
             val manifestFile = exeFile.resolveSibling(manifestName)
             copyManifestTo(manifestFile)
-            logger.info("Copying manifest to $manifestFile")
+            logger.info("Copied manifest to $manifestFile")
         }
     }
 
