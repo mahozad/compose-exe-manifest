@@ -15,7 +15,7 @@ import java.io.File
 abstract class EmbedTask : DefaultTask() {
 
     init {
-        group = "compose desktop"
+        group = "compose desktop" // Same group as CMP tasks
         description = "Embeds a manifest file in the app exe"
     }
 
@@ -50,7 +50,7 @@ abstract class EmbedTask : DefaultTask() {
             ?.use { mtFile.outputStream().use(it::copyTo) }
         javaClass.getResourceAsStream("/mt_x64/${dllFile.name}")
             ?.use { dllFile.outputStream().use(it::copyTo) }
-        mtFile
+        return@lazy mtFile
     }
 
     @TaskAction

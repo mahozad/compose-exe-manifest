@@ -34,8 +34,8 @@ abstract class EmbedPlugin : Plugin<Project> {
         project
             .tasks
             .withType(AbstractJPackageTask::class.java)
-            // FIXME: When user runs CMP packageExe task, our task is executed but has no effect
-            //  probably because we don't know where the temporary app exe file is stored before being packaged
+            // FIXME: When user runs CMP packageExe task, our task is executed but has no effect on the exe in package;
+            //  we don't know where the temporary app exe file is created before being packaged in the installer
             .matching { "package" !in it.name }
             .all { composePackagingTask ->
                 val embedTask = project.tasks.register(

@@ -10,7 +10,7 @@ abstract class EmbedExtension @Inject constructor(project: Project) {
      *
      * Defaults to `true`.
      */
-    val enabled = project.objects.property<Boolean>(Boolean::class.java).value(true)
+    val enabled = project.objects.property(Boolean::class.java).value(true)
 
     /**
      * The manifest file to embed in app exe.
