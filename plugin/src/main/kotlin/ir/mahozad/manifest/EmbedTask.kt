@@ -8,6 +8,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
@@ -66,7 +67,7 @@ abstract class EmbedTask : DefaultTask() {
     @TaskAction
     fun execute() {
         outputManifestFile?.delete()
-        val exeFile = outputExeFile ?: return
+        val exeFile = outputExeFile ?: throw StopExecutionException()
         if (manifestMode.get().shouldEmbed) {
             exeFile.temporaryWritable(::embedManifestIn)
             logger.info("Embedded manifest in $exeFile")
