@@ -1,7 +1,11 @@
 A Gradle plugin for [Compose Multiplatform][1] projects to embed a [manifest][2] in the app exe file.
 
-> [!NOTE]  
-> The embedding currently does NOT work for packaging tasks (like `packageExe`).
+> [!WARNING]
+> The plugin has not been approved by Gradle yet. Please come back a few days later!
+
+> [!NOTE]
+> The embedding only works for `create*Distributable` tasks.  
+> It currently does **NOT** work for packaging tasks (like `packageExe`).
 
 ### Usage
 
