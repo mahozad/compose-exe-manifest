@@ -1,3 +1,5 @@
+Example Gradle plugin: https://github.com/JetBrains/compose-multiplatform/tree/master/gradle-plugins
+
 The manifest can either be placed beside the app exe or
 can be embedded in the app exe with [Mt.exe][1].
 
@@ -24,6 +26,11 @@ Related StackOverflow posts:
   - https://stackoverflow.com/q/61200747
   - https://stackoverflow.com/q/78466325
   - https://stackoverflow.com/q/39493502
+  - https://stackoverflow.com/q/64258735
+
+Related discussions:
+  - https://discuss.gradle.org/t/how-to-create-a-task-with-outputs-that-arent-known-during-configuration-phase/38439/4
+  - https://discuss.gradle.org/t/using-a-dynamic-collection-of-files-as-a-task-output/27339
 
 
 [1]: https://learn.microsoft.com/en-us/windows/win32/sbscs/mt-exe
