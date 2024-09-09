@@ -43,8 +43,18 @@ abstract class EmbedTask : DefaultTask() {
         outputExeFile?.resolveSibling("${outputExeFile?.name}.manifest")
     }
 
+    // TODO: Move this to a separate task and make this task depend on it
+    //  probably by creating another @get:InputFile for the mt.exe file
     private val mtExe: File by lazy {
-        val mtFile = temporaryDir.resolve("mt.exe")
+        // Could use below code, but it created temp directory
+        //  for every different instance of this task class
+        // val mtFile = temporaryDir.resolve("mt.exe")
+        val mtFile = project
+            .gradle
+            .gradleUserHomeDir
+            .resolve("compose-exe-manifest")
+            .also(File::mkdir)
+            .resolve("mt.exe")
         val dllFile = mtFile.resolveSibling("midlrtmd.dll")
         javaClass.getResourceAsStream("/mt_x64/${mtFile.name}")
             ?.use { mtFile.outputStream().use(it::copyTo) }
