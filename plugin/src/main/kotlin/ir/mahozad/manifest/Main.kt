@@ -155,13 +155,11 @@ abstract class EmbedTask : DefaultTask() {
     }
 
     @TaskAction
-    fun action() {
+    fun execute() {
         outputManifestFile?.delete()
         val exeFile = outputExeFile ?: return
         if (manifestMode.get().shouldEmbed) {
-            exeFile.setWritable(true) // Ensures the file is not readonly
-            embedManifestIn(exeFile)
-            exeFile.setWritable(false)
+            exeFile.temporaryWritable(::embedManifestIn)
             logger.info("Embedded manifest in $exeFile")
         } else {
             val manifestName = "${exeFile.name}.manifest"
@@ -169,6 +167,12 @@ abstract class EmbedTask : DefaultTask() {
             copyManifestTo(manifestFile)
             logger.info("Copying manifest to $manifestFile")
         }
+    }
+
+    private fun File.temporaryWritable(block: (File) -> Unit) {
+        setWritable(true)
+        block(this)
+        setWritable(false)
     }
 
     private fun copyManifestTo(destination: File) {
