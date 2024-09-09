@@ -8,6 +8,8 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.extensions.stdlib.capitalized
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
@@ -107,7 +109,7 @@ enum class ManifestMode {
      */
     COPY_AND_EMBED;
 
-    val shouldEmbed get() = this == EMBED || this == COPY_AND_EMBED
+    internal val shouldEmbed get() = this == EMBED || this == COPY_AND_EMBED
 }
 
 // The class is made abstract so that Gradle will handle many things automatically.
@@ -118,16 +120,29 @@ abstract class EmbedTask : DefaultTask() {
         description = "Embeds a manifest file in the app exe"
     }
 
+    // It's not needed to check for existence of the file or if it's a directory.
+    // Because it has been declared as an @InputFile and Gradle automatically does that.
+    @get:InputFile
+    lateinit var manifestFile: Provider<File>
+
     @get:Input
     lateinit var manifestMode: Provider<ManifestMode>
 
-    @get:InputFile
-    // It's not needed to check for existence of the file or if it's a directory.
-    // Because it has been declared as an @InputFile and Gradle automatically does that.
-    lateinit var manifestFile: Provider<File>
-
     @get:InputDirectory
     lateinit var exeDirectory: Provider<Directory>
+
+    @get:OutputFile
+    val outputExeFile by lazy {
+        // OR to get a Provider could use exeDirectory.map { it.asFileTree }.map { ... }
+        exeDirectory.get().asFile.walk().firstOrNull { it.extension == "exe" }
+    }
+
+    @get:Optional
+    @get:OutputFile
+    val outputManifestFile by lazy {
+        // OR to get a Provider could use outputExeFile.map { it.resolveSibling("${it.name}.manifest") }
+        outputExeFile?.resolveSibling("${outputExeFile?.name}.manifest")
+    }
 
     private val mtExe: File by lazy {
         val mtFile = temporaryDir.resolve("mt.exe")
@@ -141,21 +156,18 @@ abstract class EmbedTask : DefaultTask() {
 
     @TaskAction
     fun action() {
-        val exeFile = exeDirectory
-            .get()
-            .asFile
-            .walk()
-            .firstOrNull { it.extension == "exe" }
-            ?: return
+        outputManifestFile?.delete()
+        val exeFile = outputExeFile ?: return
         if (manifestMode.get().shouldEmbed) {
-            logger.info("Embedding manifest in $exeFile")
             exeFile.setWritable(true) // Ensures the file is not readonly
             embedManifestIn(exeFile)
             exeFile.setWritable(false)
+            logger.info("Embedded manifest in $exeFile")
         } else {
             val manifestName = "${exeFile.name}.manifest"
-            logger.info("Copying manifest as $manifestName")
-            copyManifestTo(exeFile.resolveSibling(manifestName))
+            val manifestFile = exeFile.resolveSibling(manifestName)
+            copyManifestTo(manifestFile)
+            logger.info("Copying manifest to $manifestFile")
         }
     }
 
