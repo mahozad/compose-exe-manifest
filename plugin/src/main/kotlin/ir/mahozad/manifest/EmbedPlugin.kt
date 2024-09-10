@@ -52,6 +52,7 @@ abstract class EmbedPlugin : Plugin<Project> {
             }
 
         // TODO: Fix this ugly code
+        // This is to prevent Gradle from complaining from executing run*Distributable tasks
         project
             .tasks
             .withType(AbstractRunDistributableTask::class.java)
