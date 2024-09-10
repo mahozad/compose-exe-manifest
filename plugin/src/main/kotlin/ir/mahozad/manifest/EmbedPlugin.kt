@@ -4,6 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.internal.extensions.stdlib.capitalized
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
+import org.jetbrains.compose.desktop.application.tasks.AbstractRunDistributableTask
 
 @Suppress("unused")
 abstract class EmbedPlugin : Plugin<Project> {
@@ -48,6 +49,15 @@ abstract class EmbedPlugin : Plugin<Project> {
                     it.exeDirectory = composePackagingTask.destinationDir
                 }
                 composePackagingTask.finalizedBy(embedTask)
+            }
+
+        // TODO: Fix this ugly code
+        project
+            .tasks
+            .withType(AbstractRunDistributableTask::class.java)
+            .all {
+                val prefix = if ("release" in it.name.lowercase()) "Release" else ""
+                it.mustRunAfter("embedManifestInExeForCreate${prefix}Distributable")
             }
     }
 }
