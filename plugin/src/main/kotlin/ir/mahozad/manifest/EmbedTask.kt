@@ -34,7 +34,7 @@ abstract class EmbedTask : DefaultTask() {
     @get:OutputFile
     val outputExeFile by lazy {
         // OR to get a Provider could use exeDirectory.map { it.asFileTree }.map { ... }
-        exeDirectory.get().asFile.walk().firstOrNull { it.extension == "exe" }
+        exeDirectory.get().asFile.walk().maxDepth(2).firstOrNull { it.extension == "exe" }
     }
 
     @get:Optional
