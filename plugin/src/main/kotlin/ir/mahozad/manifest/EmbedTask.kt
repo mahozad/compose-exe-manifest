@@ -31,6 +31,7 @@ abstract class EmbedTask : DefaultTask() {
     @get:InputDirectory
     lateinit var exeDirectory: Provider<Directory>
 
+    @get:Optional // For Other OSes that do not create exe file
     @get:OutputFile
     val outputExeFile by lazy {
         // OR to get a Provider could use exeDirectory.map { it.asFileTree }.map { ... }
@@ -67,7 +68,8 @@ abstract class EmbedTask : DefaultTask() {
     @TaskAction
     fun execute() {
         outputManifestFile?.delete()
-        val exeFile = outputExeFile ?: throw StopExecutionException()
+        val exeFile = outputExeFile
+            ?: throw StopExecutionException("Did not find exe file")
         if (manifestMode.get().shouldEmbed) {
             exeFile.temporaryWritable(::embedManifestIn)
             logger.info("Embedded manifest in $exeFile")
