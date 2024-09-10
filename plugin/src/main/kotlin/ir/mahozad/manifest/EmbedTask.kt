@@ -38,7 +38,7 @@ abstract class EmbedTask : DefaultTask() {
         exeDirectory.get().asFile.walk().maxDepth(2).firstOrNull { it.extension == "exe" }
     }
 
-    @get:Optional
+    @get:Optional // For when the manifest mode is only embed
     @get:OutputFile
     val outputManifestFile by lazy {
         // OR to get a Provider could use outputExeFile.map { it.resolveSibling("${it.name}.manifest") }
