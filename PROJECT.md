@@ -1,7 +1,9 @@
 Example Gradle plugin: https://github.com/JetBrains/compose-multiplatform/tree/master/gradle-plugins
 
-The manifest can either be placed beside the app exe or
-can be embedded in the app exe with [Mt.exe][1].
+To publish the plugin to Gradle plugin portal, run `:plugin:publishPlugins` task.
+
+App manifest can either be placed beside the app exe or
+can be embedded in the app exe with [mt.exe][1].
 
 To [install/acquire mt.exe][2], do the following:
   - Download "Windows SDK" installer  
@@ -19,6 +21,7 @@ To [embed a manifest file in the exe][3], execute *mt.exe* like this:
 
 Related Compose Multiplatform issues:
   - https://github.com/JetBrains/compose-multiplatform/issues/4251
+  - https://github.com/JetBrains/compose-multiplatform/issues/2625
 
 Related StackOverflow posts:
   - https://stackoverflow.com/q/1385866

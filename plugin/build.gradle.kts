@@ -25,7 +25,7 @@ gradlePlugin {
             description = "Embeds application manifest XML file in Compose Multiplatform desktop exe file"
             displayName = "Compose Exe Manifest"
             website = "https://github.com/mahozad/compose-exe-manifest"
-            vcsUrl = "https://github.com/mahozad/compose-exe-manifest"
+            vcsUrl = "https://github.com/mahozad/compose-exe-manifest.git"
             tags = listOf(
                 "compose-multiplatform",
                 "application-manifest",
