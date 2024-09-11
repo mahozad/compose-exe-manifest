@@ -6,6 +6,9 @@ import org.gradle.internal.extensions.stdlib.capitalized
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.desktop.application.tasks.AbstractRunDistributableTask
 
+// An easy and informative way to debug the tasks and why they are up to date or not is to add
+// --info to the gradle command so that it shows the info logs (such as why a task was skipped)
+
 @Suppress("unused")
 abstract class EmbedPlugin : Plugin<Project> {
 
