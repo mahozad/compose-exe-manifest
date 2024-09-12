@@ -1,0 +1,15 @@
+[versions]
+gradle = "8.10"
+kotlin = "2.0.20"
+publish-plugin = "1.2.2"
+compose-multiplatform = "1.6.11"
+proguard = "7.5.0"
+
+[libraries]
+compose-multiplatform-plugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+publish-plugin = { id = "com.gradle.plugin-publish", version.ref = "publish-plugin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }

@@ -2,9 +2,9 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
 import ir.mahozad.manifest.ManifestMode
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.multiplatform)
     id("ir.mahozad.compose-exe-manifest") version "0.6.0"
 }
 
@@ -26,7 +26,7 @@ compose.desktop {
             packageVersion = "1.0.0"
             packageName = project.name
             buildTypes.release.proguard {
-                version = "7.5.0"
+                version = libs.versions.proguard.get()
             }
         }
     }

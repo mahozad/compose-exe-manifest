@@ -1,7 +1,7 @@
 plugins {
     // `kotlin-dsl`
-    id("com.gradle.plugin-publish")
-    id("org.jetbrains.kotlin.jvm")
+    alias(libs.plugins.publish.plugin)
+    alias(libs.plugins.kotlin.jvm)
 }
 
 group = "ir.mahozad"
@@ -13,7 +13,7 @@ dependencies {
     //
     // compileOnly scope is used so the Compose Multiplatform dependency version
     // is not overridden for the project of user when they apply our plugin
-    compileOnly("org.jetbrains.compose:compose-gradle-plugin:1.6.11")
+    compileOnly(libs.compose.multiplatform.plugin)
     // testImplementation(kotlin("test"))
 }
 
