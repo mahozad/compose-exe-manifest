@@ -20,13 +20,16 @@ abstract class EmbedTask : DefaultTask() {
         description = "Embeds a manifest file in the app exe"
     }
 
-    // It's not needed to check for existence of the file or if it's a directory.
-    // Because it has been declared as an @InputFile and Gradle automatically does that.
+    @get:Input
+    lateinit var manifestMode: Provider<ManifestMode>
+
+    // It's not necessary to check for existence of the file or if it's a directory.
+    // Because Gradle automatically checks those when annotated with @InputFile.
     @get:InputFile
     lateinit var manifestFile: Provider<File>
 
-    @get:Input
-    lateinit var manifestMode: Provider<ManifestMode>
+    @get:InputFile
+    lateinit var mtExeFile: Provider<File>
 
     @get:InputDirectory
     lateinit var exeDirectory: Provider<Directory>
@@ -43,26 +46,6 @@ abstract class EmbedTask : DefaultTask() {
     val outputManifestFile by lazy {
         // OR to get a Provider could use outputExeFile.map { it.resolveSibling("${it.name}.manifest") }
         outputExeFile?.resolveSibling("${outputExeFile?.name}.manifest")
-    }
-
-    // TODO: Move this to a separate task and make this task depend on it
-    //  probably by creating another @get:InputFile for the mt.exe file
-    private val mtExe: File by lazy {
-        // Could use below code, but it created temp directory
-        //  for every different instance of this task class
-        // val mtFile = temporaryDir.resolve("mt.exe")
-        val mtFile = project
-            .gradle
-            .gradleUserHomeDir
-            .resolve("compose-exe-manifest")
-            .also(File::mkdir)
-            .resolve("mt.exe")
-        val dllFile = mtFile.resolveSibling("midlrtmd.dll")
-        javaClass.getResourceAsStream("/mt_x64/${mtFile.name}")
-            ?.use { mtFile.outputStream().use(it::copyTo) }
-        javaClass.getResourceAsStream("/mt_x64/${dllFile.name}")
-            ?.use { dllFile.outputStream().use(it::copyTo) }
-        return@lazy mtFile
     }
 
     @TaskAction
@@ -97,7 +80,7 @@ abstract class EmbedTask : DefaultTask() {
     private fun embedManifestIn(exe: File) {
         ProcessBuilder()
             .command(
-                mtExe.absolutePath,
+                mtExeFile.get().absolutePath,
                 "-nologo",
                 "-manifest", manifestFile.get().absolutePath,
                 "-outputresource:\"${exe.absolutePath};#1\""
@@ -105,6 +88,6 @@ abstract class EmbedTask : DefaultTask() {
             .directory(exe.parentFile)
             .start()
             .inputReader()
-            .forEachLine(::println)
+            .forEachLine(logger::info)
     }
 }

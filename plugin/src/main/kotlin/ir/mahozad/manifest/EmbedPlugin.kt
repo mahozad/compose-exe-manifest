@@ -19,6 +19,11 @@ abstract class EmbedPlugin : Plugin<Project> {
             project
         )
 
+        val prepareMtTask = project.tasks.register(
+            "prepareMtExeFile",
+            PrepareMtTask::class.java
+        )
+
         // To access AbstractJPackageTask, we needed to add CMP plugin as a dependency in our build file.
         //
         // Instead of using Kotlin filter, map, forEach, etc. the Gradle withType, matching, all etc. are used
@@ -44,12 +49,13 @@ abstract class EmbedPlugin : Plugin<Project> {
             .all { composePackagingTask ->
                 val embedTask = project.tasks.register(
                     "embedManifestInExeFor${composePackagingTask.name.capitalized()}",
-                    EmbedTask::class.java,
+                    EmbedTask::class.java
                 ) {
                     it.enabled = embedExtension.enabled.get()
                     it.manifestMode = embedExtension.manifestMode
                     it.manifestFile = embedExtension.manifestFile.asFile
                     it.exeDirectory = composePackagingTask.destinationDir
+                    it.mtExeFile = prepareMtTask.get().mtExeFile.asFile
                 }
                 composePackagingTask.finalizedBy(embedTask)
             }
