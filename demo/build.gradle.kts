@@ -3,6 +3,7 @@ import ir.mahozad.manifest.ManifestMode
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
     id("ir.mahozad.compose-exe-manifest") version "0.6.0"
 }

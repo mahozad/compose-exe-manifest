@@ -7,8 +7,9 @@ plugins {
     //   - Maven Publish plugin (maven-publish)
     // See https://plugins.gradle.org/docs/publish-plugin
     id("com.gradle.plugin-publish") version "1.2.2" apply false
-    id("org.jetbrains.kotlin.jvm") version "1.9.22" apply false
+    id("org.jetbrains.kotlin.jvm") version "2.0.20" apply false
     id("org.jetbrains.compose") version "1.6.11" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.20" apply false
 }
 
 subprojects {
