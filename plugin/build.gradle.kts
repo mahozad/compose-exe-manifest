@@ -18,6 +18,12 @@ dependencies {
     // compileOnly scope is used so the Compose Multiplatform dependency version
     // is not overridden for the project of user when they apply our plugin
     compileOnly(libs.compose.multiplatform.plugin)
+    testImplementation(libs.junit5)
+    testImplementation(libs.assertj)
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 gradlePlugin {

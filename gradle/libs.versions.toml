@@ -1,12 +1,16 @@
 [versions]
 gradle = "8.10"
 kotlin = "2.0.20"
+proguard = "7.5.0"
 publish-plugin = "1.2.2"
 compose-multiplatform = "1.6.11"
-proguard = "7.5.0"
+junit5 = "5.11.0"
+assertj = "3.26.3"
 
 [libraries]
 compose-multiplatform-plugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
+junit5 = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
+assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
