@@ -31,10 +31,10 @@ abstract class EmbedTask : DefaultTask() {
     @get:InputDirectory
     lateinit var exeDirectory: Provider<Directory>
 
-    @get:Optional // For Other OSes that do not create exe file
+    @get:Optional // For non-Windows OSes that do not create exe file
     @get:OutputFile
     val outputExeFile by lazy {
-        // OR to get a Provider could use exeDirectory.map { it.asFileTree }.map { ... }
+        // OR to get a Provider could use exeDirectory.map { it.asFileTree }.filter {...}
         exeDirectory.get().asFile.walk().maxDepth(2).firstOrNull { it.extension == "exe" }
     }
 
