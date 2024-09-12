@@ -44,7 +44,14 @@ abstract class EmbedPlugin : Plugin<Project> {
             .tasks
             .withType(AbstractJPackageTask::class.java)
             // FIXME: When user runs CMP packageExe task, our task is executed but has no effect on the exe in package;
-            //  we don't know where the temporary app exe file is created before being packaged in the installer
+            //  it's probably because the jPackage directly creates the app packaged installer
+            //  (instead of creating app image and then packaging it into installer).
+            //  See the following:
+            //  - https://github.com/JetBrains/compose-multiplatform/issues/794
+            //  - https://github.com/JetBrains/compose-multiplatform/issues/1972
+            //  - https://github.com/JetBrains/compose-multiplatform/issues/2335
+            //  - https://github.com/JetBrains/compose-multiplatform/blob/release/1.6.11/gradle-plugins/compose/src/main/kotlin/org/jetbrains/compose/desktop/application/internal/configureJvmApplication.kt
+            //  - https://github.com/JetBrains/compose-multiplatform/blob/release/1.6.11/gradle-plugins/compose/src/main/kotlin/org/jetbrains/compose/desktop/application/tasks/AbstractJPackageTask.kt
             .matching { "package" !in it.name }
             .all { composePackagingTask ->
                 val embedTask = project.tasks.register(
