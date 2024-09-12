@@ -1,5 +1,9 @@
 plugins {
-    // `kotlin-dsl`
+    // Using the Plugin Publish plugin makes plugin publication possible.
+    // It also in turn auto-applies the following two plugins:
+    //   - Gradle Plugin Development Plugin (java-gradle-plugin)
+    //   - Maven Publish plugin (maven-publish)
+    // See https://plugins.gradle.org/docs/publish-plugin
     alias(libs.plugins.publish.plugin)
     alias(libs.plugins.kotlin.jvm)
 }
@@ -14,7 +18,6 @@ dependencies {
     // compileOnly scope is used so the Compose Multiplatform dependency version
     // is not overridden for the project of user when they apply our plugin
     compileOnly(libs.compose.multiplatform.plugin)
-    // testImplementation(kotlin("test"))
 }
 
 gradlePlugin {
