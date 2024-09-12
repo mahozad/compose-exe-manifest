@@ -5,7 +5,9 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose.multiplatform)
-    id("ir.mahozad.compose-exe-manifest") version "0.6.0"
+
+    // Included (composite) build; see settings.gradle.kts files
+    id("ir.mahozad.compose-exe-manifest")
 }
 
 composeExeManifest {
