@@ -18,7 +18,7 @@ plugins {
 composeExeManifest {
     enabled = true
     manifestMode = ManifestMode.EMBED
-    manifestFile = file("app.manifest") // Located beside the build file
+    manifestFile = file("app.manifest") // Same directory as the build file
 }
 ```
 

@@ -62,7 +62,7 @@ abstract class EmbedPlugin : Plugin<Project> {
                     it.manifestMode = embedExtension.manifestMode
                     it.manifestFile = embedExtension.manifestFile.asFile
                     it.exeDirectory = composePackagingTask.destinationDir
-                    it.mtExeFile = prepareMtTask.get().mtExeFile.asFile
+                    it.mtExecutable = prepareMtTask.get().mtExeFile.asFile
                 }
                 composePackagingTask.finalizedBy(embedTask)
             }

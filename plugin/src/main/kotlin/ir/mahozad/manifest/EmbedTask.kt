@@ -23,18 +23,18 @@ abstract class EmbedTask : DefaultTask() {
     @get:Input
     lateinit var manifestMode: Provider<ManifestMode>
 
-    // It's not necessary to check for existence of the file or if it's a directory.
-    // Because Gradle automatically checks those when annotated with @InputFile.
+    // It's not necessary to check for existence of the file or if it's a directory
+    // because Gradle automatically checks those for a field annotated with @InputFile.
     @get:InputFile
     lateinit var manifestFile: Provider<File>
 
     @get:InputFile
-    lateinit var mtExeFile: Provider<File>
+    lateinit var mtExecutable: Provider<File>
 
     @get:InputDirectory
     lateinit var exeDirectory: Provider<Directory>
 
-    @get:Optional // For non-Windows OSes that do not create exe file
+    @get:Optional // For non-Windows OSes that do not create app exe file
     @get:OutputFile
     val outputExeFile by lazy {
         // OR to get a Provider could use exeDirectory.map { it.asFileTree }.filter {...}
@@ -52,35 +52,29 @@ abstract class EmbedTask : DefaultTask() {
     fun execute() {
         outputManifestFile?.delete()
         val exeFile = outputExeFile
-            ?: throw StopExecutionException("Did not find exe file")
+            // Skips execution of the rest of the task code
+            ?: throw StopExecutionException("Did not find app exe file")
         if (manifestMode.get().shouldEmbed) {
             exeFile.temporaryWritable(::embedManifestIn)
             logger.info("Embedded manifest in $exeFile")
         } else {
-            val manifestName = "${exeFile.name}.manifest"
-            val manifestFile = exeFile.resolveSibling(manifestName)
-            copyManifestTo(manifestFile)
-            logger.info("Copied manifest to $manifestFile")
+            val manifestCopyName = "${exeFile.name}.manifest"
+            val manifestCopyFile = exeFile.resolveSibling(manifestCopyName)
+            manifestFile.get().copyTo(manifestCopyFile, overwrite = true)
+            logger.info("Copied manifest to $manifestCopyFile")
         }
     }
 
-    private fun File.temporaryWritable(block: (File) -> Unit) {
+    private fun File.temporaryWritable(function: (File) -> Unit) {
         setWritable(true)
-        block(this)
+        function(this)
         setWritable(false)
-    }
-
-    private fun copyManifestTo(destination: File) {
-        manifestFile
-            .get()
-            .inputStream()
-            .use { destination.outputStream().use(it::copyTo) }
     }
 
     private fun embedManifestIn(exe: File) {
         ProcessBuilder()
             .command(
-                mtExeFile.get().absolutePath,
+                mtExecutable.get().absolutePath,
                 "-nologo",
                 "-manifest", manifestFile.get().absolutePath,
                 "-outputresource:\"${exe.absolutePath};#1\""
