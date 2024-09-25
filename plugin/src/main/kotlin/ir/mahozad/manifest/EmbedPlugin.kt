@@ -15,8 +15,7 @@ abstract class EmbedPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val embedExtension = project.extensions.create(
             "composeExeManifest",
-            EmbedExtension::class.java,
-            project
+            EmbedExtension::class.java
         )
 
         val prepareMtTask = project.tasks.register(
