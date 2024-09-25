@@ -66,8 +66,8 @@ abstract class EmbedPlugin : Plugin<Project> {
                 composePackagingTask.finalizedBy(embedTask)
             }
 
-        // TODO: Fix this ugly code
         // This is to prevent Gradle from complaining when executing run*Distributable tasks
+        // TODO: Improve this ugly code
         project
             .tasks
             .withType(AbstractRunDistributableTask::class.java)
