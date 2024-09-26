@@ -15,6 +15,7 @@ import kotlin.io.path.name
 import kotlin.io.path.toPath
 import kotlin.io.path.writeText
 
+// See https://stackoverflow.com/questions/62282412/how-can-i-run-my-custom-gradle-task-in-the-unit-test
 class ExampleTest {
 
     @Disabled
